@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Blockchain Voting System Design System */
+
+@layer base {
+  :root {
+    /* Modern blockchain theme with deep blues and vibrant accents */
+    --background: 220 25% 97%;
+    --foreground: 220 20% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 12%;
+
+    /* Primary: Deep blue for trust and technology */
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 221 90% 65%;
+
+    /* Secondary: Purple accent for blockchain aesthetic */
+    --secondary: 271 81% 56%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted: Subtle backgrounds */
+    --muted: 220 20% 95%;
+    --muted-foreground: 220 15% 45%;
+
+    /* Accent: Vibrant purple for highlights */
+    --accent: 271 81% 56%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Success state */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning state */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%), hsl(271 81% 56%));
+    --gradient-subtle: linear-gradient(180deg, hsl(220 25% 97%), hsl(220 20% 95%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 25% 98%));
+    
+    /* Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(221 83% 53% / 0.2);
+    --shadow-glow: 0 0 40px hsl(221 90% 65% / 0.3);
+    --shadow-card: 0 4px 20px hsl(220 20% 12% / 0.08);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 220 25% 6%;
+    --foreground: 220 20% 95%;
+
+    --card: 220 20% 10%;
+    --card-foreground: 220 20% 95%;
+
+    --popover: 220 20% 10%;
+    --popover-foreground: 220 20% 95%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 221 90% 65%;
+
+    --secondary: 271 81% 56%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 20% 15%;
+    --muted-foreground: 220 15% 60%;
+
+    --accent: 271 81% 56%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 221 83% 53%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%), hsl(271 81% 56%));
+    --gradient-subtle: linear-gradient(180deg, hsl(220 25% 6%), hsl(220 20% 10%));
+    --gradient-card: linear-gradient(145deg, hsl(220 20% 10%), hsl(220 20% 12%));
+    
+    --shadow-elegant: 0 10px 30px -10px hsl(221 83% 53% / 0.4);
+    --shadow-glow: 0 0 40px hsl(221 90% 65% / 0.5);
+    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  .glass-effect {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
