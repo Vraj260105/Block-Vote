@@ -30,7 +30,7 @@ class APIService {
     this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     this.api = axios.create({
       baseURL: this.baseURL,
-      timeout: 10000,
+      timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
       },
