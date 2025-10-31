@@ -1,30 +1,33 @@
-const { Resend } = require('resend');
+const SibApiV3Sdk = require('@sendinblue/client');
 require('dotenv').config();
 
 class EmailService {
   constructor() {
-    this.resend = null;
-    this.initializeResend();
+    this.brevoClient = null;
+    this.initializeBrevo();
   }
 
-  initializeResend() {
+  initializeBrevo() {
     try {
-      if (!process.env.RESEND_API_KEY) {
-        console.warn('⚠️ RESEND_API_KEY not configured. Email service disabled.');
+      if (!process.env.BREVO_API_KEY) {
+        console.warn('⚠️ BREVO_API_KEY not configured. Email service disabled.');
         console.log('📧 OTPs will be logged to console instead.');
         return;
       }
 
-      this.resend = new Resend(process.env.RESEND_API_KEY);
-      console.log('✅ Resend email service initialized');
+      this.brevoClient = new SibApiV3Sdk.TransactionalEmailsApi();
+      const apiKey = this.brevoClient.authentications['apiKey'];
+      apiKey.apiKey = process.env.BREVO_API_KEY;
+      
+      console.log('✅ Brevo email service initialized');
     } catch (error) {
-      console.error('❌ Resend initialization failed:', error.message);
+      console.error('❌ Brevo initialization failed:', error.message);
     }
   }
 
   async sendOTP(email, otp, type) {
-    if (!this.resend) {
-      console.warn('⚠️ Resend not configured, OTP not sent');
+    if (!this.brevoClient) {
+      console.warn('⚠️ Brevo not configured, OTP not sent');
       console.log(`📧 OTP for ${email}: ${otp} (type: ${type})`);
       return { success: true, messageId: 'mock', preview: `OTP: ${otp}` };
     }
@@ -33,26 +36,26 @@ class EmailService {
       const subject = this.getSubjectByType(type);
       const html = this.getOTPEmailTemplate(otp, type);
 
-      const { data, error } = await this.resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'Blockchain Voting <onboarding@resend.dev>',
-        to: email,
-        subject: subject,
-        html: html,
-      });
+      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+      sendSmtpEmail.sender = { 
+        name: 'Blockchain Voting System',
+        email: process.env.BREVO_FROM_EMAIL || 'noreply@yourdomain.com'
+      };
+      sendSmtpEmail.to = [{ email: email }];
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = html;
 
-      if (error) {
-        console.error('❌ Failed to send OTP email:', error);
-        return { success: false, error: error.message };
-      }
+      const response = await this.brevoClient.sendTransacEmail(sendSmtpEmail);
 
-      console.log(`📧 OTP email sent to ${email}: ${data.id}`);
+      console.log(`📧 OTP email sent to ${email}: ${response.messageId}`);
 
       return {
         success: true,
-        messageId: data.id
+        messageId: response.messageId
       };
     } catch (error) {
       console.error('❌ Failed to send OTP email:', error);
+      console.log(`⚠️ EMAIL FAILED - OTP for ${email}: ${otp}`);
       return { success: false, error: error.message };
     }
   }
