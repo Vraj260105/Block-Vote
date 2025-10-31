@@ -1,84 +1,62 @@
-const nodemailer = require('nodemailer');
+const Mailgun = require('mailgun.js');
+const formData = require('form-data');
 require('dotenv').config();
 
 class EmailService {
   constructor() {
-    this.transporter = null;
-    this.initializeTransporter();
+    this.mailgun = null;
+    this.initializeMailgun();
   }
 
-  async initializeTransporter() {
+  initializeMailgun() {
     try {
-      // Check if email credentials are configured
-      const hasEmailConfig = process.env.EMAIL_USER && process.env.EMAIL_PASS;
+      // Check if Mailgun credentials are configured
+      const hasMailgunConfig = process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN;
       
-      if (!hasEmailConfig) {
-        console.warn('⚠️ Email credentials not configured. Using test account...');
-        // Create a test account for development
-        const testAccount = await nodemailer.createTestAccount();
-        
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.ethereal.email',
-          port: 587,
-          secure: false,
-          auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-          },
-        });
-        
-        console.log('📧 Test email account created. Check console for preview URLs.');
-      } else {
-        // Use real email configuration (Gmail or other service)
-        this.transporter = nodemailer.createTransport({
-          service: process.env.EMAIL_SERVICE || 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
-        
-        console.log(`📧 Using ${process.env.EMAIL_SERVICE || 'gmail'} email service with ${process.env.EMAIL_USER}`);
+      if (!hasMailgunConfig) {
+        console.warn('⚠️ Mailgun credentials not configured. Email service disabled.');
+        console.log('📧 Set MAILGUN_API_KEY and MAILGUN_DOMAIN to enable email service.');
+        return;
       }
 
-      // Verify connection
-      await this.transporter.verify();
-      console.log('✅ Email service initialized successfully');
+      const mailgun = new Mailgun(formData);
+      this.mailgun = mailgun.client({
+        username: 'api',
+        key: process.env.MAILGUN_API_KEY,
+        url: process.env.MAILGUN_URL || 'https://api.mailgun.net'
+      });
+      
+      console.log(`📧 Mailgun email service initialized with domain: ${process.env.MAILGUN_DOMAIN}`);
     } catch (error) {
-      console.error('❌ Email service initialization failed:', error.message);
-      // Don't throw error to allow app to start without email
+      console.error('❌ Mailgun initialization failed:', error.message);
     }
   }
 
   async sendOTP(email, otp, type) {
-    if (!this.transporter) {
-      console.warn('⚠️ Email service not available, OTP not sent');
-      console.log(`📧 Mock OTP for ${email}: ${otp} (type: ${type})`);
-      return { success: true, messageId: 'mock', preview: 'Email service disabled' };
+    if (!this.mailgun) {
+      console.warn('⚠️ Mailgun not configured, OTP not sent');
+      console.log(`📧 OTP for ${email}: ${otp} (type: ${type})`);
+      return { success: true, messageId: 'mock', preview: 'Mailgun service disabled' };
     }
 
     try {
       const subject = this.getSubjectByType(type);
       const html = this.getOTPEmailTemplate(otp, type);
 
-      const info = await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || '"Blockchain Voting System" <noreply@votingsystem.com>',
+      const messageData = {
+        from: process.env.EMAIL_FROM || 'Blockchain Voting <noreply@' + process.env.MAILGUN_DOMAIN + '>',
         to: email,
         subject: subject,
-        html: html,
-      });
+        html: html
+      };
 
-      console.log(`📧 OTP email sent to ${email}: ${info.messageId}`);
-      
-      // For development, log the preview URL
-      if (process.env.NODE_ENV === 'development') {
-        console.log('📧 Preview URL:', nodemailer.getTestMessageUrl(info));
-      }
+      const response = await this.mailgun.messages.create(process.env.MAILGUN_DOMAIN, messageData);
+
+      console.log(`📧 OTP email sent to ${email}: ${response.id}`);
 
       return {
         success: true,
-        messageId: info.messageId,
-        preview: process.env.NODE_ENV === 'development' ? nodemailer.getTestMessageUrl(info) : null
+        messageId: response.id
       };
     } catch (error) {
       console.error('❌ Failed to send OTP email:', error);
