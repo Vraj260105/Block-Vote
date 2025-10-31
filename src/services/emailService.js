@@ -1,84 +1,55 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 require('dotenv').config();
 
 class EmailService {
   constructor() {
-    this.transporter = null;
-    this.initializeTransporter();
+    this.resend = null;
+    this.initializeResend();
   }
 
-  async initializeTransporter() {
+  initializeResend() {
     try {
-      // Check if email credentials are configured
-      const hasEmailConfig = process.env.EMAIL_USER && process.env.EMAIL_PASS;
-      
-      if (!hasEmailConfig) {
-        console.warn('⚠️ Email credentials not configured. Using test account...');
-        // Create a test account for development
-        const testAccount = await nodemailer.createTestAccount();
-        
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.ethereal.email',
-          port: 587,
-          secure: false,
-          auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-          },
-        });
-        
-        console.log('📧 Test email account created. Check console for preview URLs.');
-      } else {
-        // Use real email configuration (Gmail or other service)
-        this.transporter = nodemailer.createTransport({
-          service: process.env.EMAIL_SERVICE || 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
-        
-        console.log(`📧 Using ${process.env.EMAIL_SERVICE || 'gmail'} email service with ${process.env.EMAIL_USER}`);
+      if (!process.env.RESEND_API_KEY) {
+        console.warn('⚠️ RESEND_API_KEY not configured. Email service disabled.');
+        console.log('📧 OTPs will be logged to console instead.');
+        return;
       }
 
-      // Verify connection
-      await this.transporter.verify();
-      console.log('✅ Email service initialized successfully');
+      this.resend = new Resend(process.env.RESEND_API_KEY);
+      console.log('✅ Resend email service initialized');
     } catch (error) {
-      console.error('❌ Email service initialization failed:', error.message);
-      // Don't throw error to allow app to start without email
+      console.error('❌ Resend initialization failed:', error.message);
     }
   }
 
   async sendOTP(email, otp, type) {
-    if (!this.transporter) {
-      console.warn('⚠️ Email service not available, OTP not sent');
-      console.log(`📧 Mock OTP for ${email}: ${otp} (type: ${type})`);
-      return { success: true, messageId: 'mock', preview: 'Email service disabled' };
+    if (!this.resend) {
+      console.warn('⚠️ Resend not configured, OTP not sent');
+      console.log(`📧 OTP for ${email}: ${otp} (type: ${type})`);
+      return { success: true, messageId: 'mock', preview: `OTP: ${otp}` };
     }
 
     try {
       const subject = this.getSubjectByType(type);
       const html = this.getOTPEmailTemplate(otp, type);
 
-      const info = await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || '"Blockchain Voting System" <noreply@votingsystem.com>',
+      const { data, error } = await this.resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'Blockchain Voting <onboarding@resend.dev>',
         to: email,
         subject: subject,
         html: html,
       });
 
-      console.log(`📧 OTP email sent to ${email}: ${info.messageId}`);
-      
-      // For development, log the preview URL
-      if (process.env.NODE_ENV === 'development') {
-        console.log('📧 Preview URL:', nodemailer.getTestMessageUrl(info));
+      if (error) {
+        console.error('❌ Failed to send OTP email:', error);
+        return { success: false, error: error.message };
       }
+
+      console.log(`📧 OTP email sent to ${email}: ${data.id}`);
 
       return {
         success: true,
-        messageId: info.messageId,
-        preview: process.env.NODE_ENV === 'development' ? nodemailer.getTestMessageUrl(info) : null
+        messageId: data.id
       };
     } catch (error) {
       console.error('❌ Failed to send OTP email:', error);
